@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Red Hat Certified Architect Paths</title>
+<style>
+  :root { --bg:#f7f7f5; --fg:#1d1d1b; --muted:#6b6b66; --panel:#fff; --border:#d9d9d3; --nav:44px; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#161616; --fg:#eeeeea; --muted:#a0a09a; --panel:#222220; --border:#3a3a38; }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin:0; font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif; background:var(--bg); color:var(--fg); }
+
+  /* tab bar */
+  #tabs { position:sticky; top:0; z-index:10; height:var(--nav); display:flex; gap:6px; align-items:center;
+          padding:0 20px; background:var(--panel); border-bottom:1px solid var(--border); }
+  #tabs .label { font-weight:700; margin-right:10px; }
+  #tabs button.active { background:var(--fg); color:var(--bg); border-color:var(--fg); }
+
+  button { font:inherit; padding:4px 12px; border:1px solid var(--border); background:var(--panel);
+           color:var(--fg); border-radius:6px; cursor:pointer; }
+  button:hover { border-color:var(--muted); }
+
+  /* sections */
+  .view { height:calc(100vh - var(--nav)); min-height:620px; display:flex; flex-direction:column;
+          scroll-margin-top:var(--nav); border-bottom:6px solid var(--border); }
+  .view > header { padding:10px 20px; border-bottom:1px solid var(--border); display:flex; gap:16px;
+                   align-items:center; justify-content:space-between; flex-wrap:wrap; }
+  .view h1 { font-size:18px; margin:0; }
+  .sub { color:var(--muted); font-size:12px; }
+  .body { flex:1; display:flex; min-height:0; }
+  .viewport { flex:1; overflow:auto; }
+  aside { width:310px; padding:16px; overflow:auto; background:var(--panel); border-left:1px solid var(--border); }
+  aside h2 { font-size:15px; margin:0 0 4px; }
+  aside h3 { font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:14px 0 4px; }
+  aside ul { margin:0; padding-left:18px; }
+  aside hr { border:0; border-top:1px solid var(--border); margin:16px 0; }
+  .badge { display:inline-block; font-size:11px; padding:1px 8px; border-radius:10px; color:#1d1d1b; margin-right:4px; }
+  .warn { color:#b25b00; font-size:12px; }
+  .legend-row { display:flex; align-items:center; gap:8px; margin:4px 0; font-size:12px; }
+  .swatch { width:16px; height:12px; border-radius:3px; border:1.5px solid #666; flex:none; }
+  .swatch.dashed { border-style:dashed; background:transparent; }
+  .swatch.pill { border-radius:8px; }
+  .line { width:26px; height:0; border-top:2px solid; flex:none; }
+  .meta { font-size:11px; color:var(--muted); margin-top:12px; }
+  .meta a { color:inherit; }
+  .graph .node { cursor:pointer; }
+  .graph .node text { fill:#1d1d1b; pointer-events:none; }
+  .graph .node.sel rect { stroke-width:3.5; }
+  .graph .dim { opacity:.15; }
+  .graph .edge path { transition: opacity .15s; }
+  .graph .edge-label { fill:var(--fg); font-size:11px; paint-order:stroke; stroke:var(--bg); stroke-width:4px; }
+  .error { margin:40px; padding:20px; border:1px solid #c0392b; border-radius:8px; max-width:640px; }
+  @media (max-width:800px) {
+    .body { flex-direction:column; }
+    aside { width:auto; max-height:45%; border-left:0; border-top:1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<nav id="tabs"><span class="label">Red Hat Certified Architect paths</span></nav>
+<div id="sections"></div>
+
+<!-- ===================== DATA LAYER ===================== -->
+<script type="application/json" id="graph-data">
+{
+  "styles": {
+    "levels": {
+      "technologist": { "label": "Level 1 · Technologist (optional)", "color": "#e3e3dd" },
+      "sysadmin":     { "label": "Level 2 · System Administrator",    "color": "#c9e4ff" },
+      "engineer":     { "label": "Level 3 · Engineer",                "color": "#cdeec6" },
+      "specialist":   { "label": "Level 4 · Specialist",              "color": "#ffe3a8" },
+      "architect":    { "label": "Level 5 · Architect",               "color": "#f6b9b9" }
+    },
+    "nodeTypes": {
+      "course":        { "label": "Prep course",               "shape": "rect", "dashed": true },
+      "certification": { "label": "Certification exam",        "shape": "rect", "dashed": false },
+      "level":         { "label": "Level / credential earned", "shape": "pill", "dashed": false }
+    },
+    "edgeTypes": {
+      "recommended": { "label": "Recommended prep",               "color": "#4f74b3", "width": 1.6, "dash": "" },
+      "required":    { "label": "Required",                       "color": "#c0392b", "width": 2.4, "dash": "" },
+      "earns":       { "label": "Earns credential",               "color": "#2e8b57", "width": 2,   "dash": "" },
+      "optional":    { "label": "Optional starting point",        "color": "#888888", "width": 1.6, "dash": "6 4" },
+      "suggested":   { "label": "Suggested order (not enforced)", "color": "#9a9a9a", "width": 1.2, "dash": "2 4" }
+    }
+  },
+
+  "graphs": [
+    {
+      "id": "rhel",
+      "tab": "Enterprise Linux",
+      "meta": {
+        "title": "Red Hat Certified Architect – Enterprise Linux",
+        "subtitle": "Certification path for RHEL (framework effective May 2026)",
+        "asOf": "2026-10-04",
+        "disclaimer": "Course codes/titles and exam-to-course pairings should be verified at redhat.com before purchase.",
+        "sources": [
+          { "title": "Red Hat: Validate targeted expertise (May 2026)", "url": "https://www.redhat.com/en/blog/validate-targeted-expertise-major-updates-red-hat-certification" },
+          { "title": "Red Hat Certification program guide", "url": "https://docs.redhat.com/en/documentation/red_hat_learning_subscription/1-latest/html/red_hat_certification_program_guide/index" },
+          { "title": "Red Hat training & certification FAQ", "url": "https://www.redhat.com/en/services/training-and-certification/faq" },
+          { "title": "ClearedPathway: Red Hat Certification Changes 2026", "url": "https://clearedpathway.com/blog/red-hat-cert-changes-2026/" }
+        ]
+      },
+      "nodes": [
+        { "id": "rh024", "type": "course", "level": "technologist", "label": "RH024", "sublabel": "RHEL Technical Overview", "title": "Red Hat Enterprise Linux Technical Overview", "description": "Introductory course for newcomers to RHEL." },
+        { "id": "tech_cert", "type": "certification", "level": "technologist", "label": "Technologist", "sublabel": "Foundational exam", "title": "Red Hat Certified Technologist (Enterprise Linux)", "description": "Optional entry-tier credential. It does not count toward RHCE or RHCA." },
+        { "id": "lvl_technologist", "type": "level", "level": "technologist", "label": "Technologist", "sublabel": "Level 1 (optional)", "title": "Level 1 – Technologist", "description": "Foundational tier. Not required for any later level." },
+
+        { "id": "rh124", "type": "course", "level": "sysadmin", "label": "RH124", "sublabel": "System Administration I", "title": "Red Hat System Administration I", "description": "Core command-line administration skills." },
+        { "id": "rh134", "type": "course", "level": "sysadmin", "label": "RH134", "sublabel": "System Administration II", "title": "Red Hat System Administration II", "description": "Storage, boot process, networking, security basics; maps closely to the RHCSA objectives." },
+        { "id": "rh199", "type": "course", "level": "sysadmin", "label": "RH199", "sublabel": "RHCSA Rapid Track", "title": "RHCSA Rapid Track", "description": "Condensed alternative to RH124 + RH134 for experienced Linux/UNIX admins." },
+        { "id": "ex200", "type": "certification", "level": "sysadmin", "label": "EX200", "sublabel": "RHCSA exam", "title": "Red Hat Certified System Administrator exam (EX200)", "description": "Performance-based, 2.5 hours, based on RHEL 10." },
+        { "id": "lvl_sysadmin", "type": "level", "level": "sysadmin", "label": "System Administrator", "sublabel": "RHCSA", "title": "Level 2 – Red Hat Certified System Administrator", "description": "Core working credential and the foundation for every later level." },
+
+        { "id": "rh342", "type": "course", "level": "engineer", "label": "RH342", "sublabel": "Diagnostics & Troubleshooting", "title": "Red Hat Enterprise Linux Diagnostics and Troubleshooting", "description": "Troubleshooting methodology across boot, storage, networking and services." },
+        { "id": "ex342", "type": "certification", "level": "engineer", "label": "EX342", "sublabel": "Advanced SysAdmin exam", "title": "Red Hat Certified Advanced System Administrator in Enterprise Linux (EX342)", "description": "Formerly the Linux Diagnostics and Troubleshooting specialist exam; now the Engineer-level exam for this track." },
+        { "id": "lvl_engineer", "type": "level", "level": "engineer", "label": "Engineer", "sublabel": "RHCE in Enterprise Linux", "title": "Level 3 – Red Hat Certified Engineer (Enterprise Linux)", "description": "Awarded automatically when RHCSA (Level 2) and EX342 (Advanced SysAdmin) are both held." },
+
+        { "id": "cl210", "type": "course", "level": "specialist", "label": "CL210", "sublabel": "OpenStack Administration II", "title": "Red Hat OpenStack Administration II", "description": "Prep for the Cloud Infrastructure specialist exam." },
+        { "id": "cl260", "type": "course", "level": "specialist", "label": "CL260", "sublabel": "Ceph Storage", "title": "Cloud Storage with Red Hat Ceph Storage", "description": "Prep for the Ceph specialist exam." },
+        { "id": "rh358", "type": "course", "level": "specialist", "label": "RH358", "sublabel": "Services Mgmt & Automation", "title": "Red Hat Services Management and Automation", "description": "Prep for EX358." },
+        { "id": "rh362", "type": "course", "level": "specialist", "label": "RH362", "sublabel": "Security: Identity Mgmt", "title": "Red Hat Security: Identity Management and Active Directory Integration", "description": "Prep for the Identity Management specialist exam." },
+        { "id": "rh403", "type": "course", "level": "specialist", "label": "RH403", "sublabel": "Satellite Administration", "title": "Red Hat Satellite Administration", "description": "Prep for the Satellite / deployment and systems management exam." },
+        { "id": "rh415", "type": "course", "level": "specialist", "label": "RH415", "sublabel": "Security: Linux", "title": "Red Hat Security: Linux in Physical, Virtual, and Cloud", "description": "Prep for the Security: Linux specialist exam." },
+        { "id": "rh436", "type": "course", "level": "specialist", "label": "RH436", "sublabel": "High Availability Clustering", "title": "Red Hat Enterprise Linux High Availability Clustering", "description": "Prep for the High Availability Clustering specialist exam." },
+        { "id": "rh442", "type": "course", "level": "specialist", "label": "RH442", "sublabel": "Linux Performance Tuning", "title": "Red Hat Enterprise Linux Performance Tuning", "description": "Prep for the Performance Tuning specialist exam." },
+
+        { "id": "ex210", "type": "certification", "level": "specialist", "label": "EX210", "sublabel": "Cloud Infrastructure", "title": "Red Hat Certified Specialist in Cloud Infrastructure (EX210)", "description": "Specialist elective for the Enterprise Linux track." },
+        { "id": "ex260", "type": "certification", "level": "specialist", "label": "EX260", "sublabel": "Ceph Storage", "title": "Red Hat Certified Specialist in Ceph Cloud Storage (EX260)", "description": "Specialist elective for the Enterprise Linux track." },
+        { "id": "ex358", "type": "certification", "level": "specialist", "label": "EX358", "sublabel": "Services Mgmt & Automation", "title": "Red Hat Certified Specialist in Services Management and Automation (EX358)", "description": "Specialist elective for the Enterprise Linux track." },
+        { "id": "ex362", "type": "certification", "level": "specialist", "label": "EX362", "sublabel": "Identity Management", "title": "Red Hat Certified Specialist in Identity Management (EX362)", "description": "Specialist elective for the Enterprise Linux track." },
+        { "id": "ex403", "type": "certification", "level": "specialist", "label": "EX403", "sublabel": "Satellite", "title": "Red Hat Certified Specialist in Deployment and Systems Management (EX403)", "description": "Specialist elective for the Enterprise Linux track." },
+        { "id": "ex415", "type": "certification", "level": "specialist", "label": "EX415", "sublabel": "Security: Linux", "title": "Red Hat Certified Specialist in Security: Linux (EX415)", "description": "Specialist elective for the Enterprise Linux track." },
+        { "id": "ex436", "type": "certification", "level": "specialist", "label": "EX436", "sublabel": "High Availability Clustering", "title": "Red Hat Certified Specialist in High Availability Clustering (EX436)", "description": "Specialist elective for the Enterprise Linux track." },
+        { "id": "ex442", "type": "certification", "level": "specialist", "label": "EX442", "sublabel": "Linux Performance Tuning", "title": "Red Hat Certified Specialist in Linux Performance Tuning (EX442)", "description": "Specialist elective for the Enterprise Linux track." },
+
+        { "id": "lvl_specialist", "type": "level", "level": "specialist", "label": "Specialist", "sublabel": "any 1 of 8 exams", "title": "Level 4 – Specialist certification", "description": "Earned by passing any one of the eight Enterprise Linux specialist exams. Exams can be taken in any order. Three are needed for RHCA." },
+        { "id": "lvl_architect", "type": "level", "level": "architect", "label": "Architect", "sublabel": "RHCA – Enterprise Linux", "title": "Level 5 – Red Hat Certified Architect in Enterprise Linux", "description": "Awarded automatically when you hold the Engineer credential plus three Specialist certifications in the Enterprise Linux track." }
+      ],
+      "edges": [
+        { "from": "rh024", "to": "tech_cert", "type": "recommended" },
+        { "from": "tech_cert", "to": "lvl_technologist", "type": "earns" },
+        { "from": "lvl_technologist", "to": "lvl_sysadmin", "type": "optional" },
+
+        { "from": "rh124", "to": "rh134", "type": "recommended", "label": "then" },
+        { "from": "rh134", "to": "ex200", "type": "recommended" },
+        { "from": "rh199", "to": "ex200", "type": "recommended", "label": "or" },
+        { "from": "ex200", "to": "lvl_sysadmin", "type": "earns" },
+
+        { "from": "rh342", "to": "ex342", "type": "recommended" },
+        { "from": "lvl_sysadmin", "to": "ex342", "type": "recommended" },
+        { "from": "ex342", "to": "lvl_engineer", "type": "earns" },
+        { "from": "lvl_sysadmin", "to": "lvl_engineer", "type": "required" },
+
+        { "from": "lvl_engineer", "to": "cl210", "type": "suggested" },
+        { "from": "lvl_engineer", "to": "cl260", "type": "suggested" },
+        { "from": "lvl_engineer", "to": "rh358", "type": "suggested" },
+        { "from": "lvl_engineer", "to": "rh362", "type": "suggested" },
+        { "from": "lvl_engineer", "to": "rh403", "type": "suggested" },
+        { "from": "lvl_engineer", "to": "rh415", "type": "suggested" },
+        { "from": "lvl_engineer", "to": "rh436", "type": "suggested" },
+        { "from": "lvl_engineer", "to": "rh442", "type": "suggested" },
+
+        { "from": "cl210", "to": "ex210", "type": "recommended" },
+        { "from": "cl260", "to": "ex260", "type": "recommended" },
+        { "from": "rh358", "to": "ex358", "type": "recommended" },
+        { "from": "rh362", "to": "ex362", "type": "recommended" },
+        { "from": "rh403", "to": "ex403", "type": "recommended" },
+        { "from": "rh415", "to": "ex415", "type": "recommended" },
+        { "from": "rh436", "to": "ex436", "type": "recommended" },
+        { "from": "rh442", "to": "ex442", "type": "recommended" },
+
+        { "from": "ex210", "to": "lvl_specialist", "type": "earns" },
+        { "from": "ex260", "to": "lvl_specialist", "type": "earns" },
+        { "from": "ex358", "to": "lvl_specialist", "type": "earns" },
+        { "from": "ex362", "to": "lvl_specialist", "type": "earns" },
+        { "from": "ex403", "to": "lvl_specialist", "type": "earns" },
+        { "from": "ex415", "to": "lvl_specialist", "type": "earns" },
+        { "from": "ex436", "to": "lvl_specialist", "type": "earns" },
+        { "from": "ex442", "to": "lvl_specialist", "type": "earns" },
+
+        { "from": "lvl_specialist", "to": "lvl_architect", "type": "required", "label": "any 3 of 8 exams" },
+        { "from": "lvl_engineer", "to": "lvl_architect", "type": "required" }
+      ]
+    },
+
+    {
+      "id": "openshift",
+      "tab": "OpenShift",
+      "meta": {
+        "title": "Red Hat Certified Architect – OpenShift",
+        "subtitle": "Certification path for OpenShift (framework effective May 2026)",
+        "asOf": "2026-10-04",
+        "disclaimer": "Course-to-exam pairings come from the prerequisite / 'recommended course' lines on Red Hat's exam pages. Exams marked with an orange '!' are labelled 'Retired' on Red Hat's site; confirm they still count toward RHCA before booking.",
+        "sources": [
+          { "title": "Red Hat: EX280 OpenShift Administrator exam", "url": "https://www.redhat.com/en/services/training/red-hat-certified-openshift-administrator-exam" },
+          { "title": "Red Hat: EX380 Advanced System Administrator in OpenShift", "url": "https://www.redhat.com/en/services/training/ex380-certified-specialist-openshift-automation-exam" },
+          { "title": "Red Hat: EX282 OpenShift Networking", "url": "https://www.redhat.com/en/services/training/red-hat-certified-specialist-openshift-networking" },
+          { "title": "Red Hat: EX316 OpenShift Virtualization", "url": "https://www.redhat.com/en/services/training/red-hat-certified-specialist-openshift-virtualization-ex316" },
+          { "title": "Red Hat: EX336 Automating OpenShift VM Management", "url": "https://www.redhat.com/en/services/training/ex336-red-hat-certified-specialist-automating-openshift-virtual-machine-management-exam" },
+          { "title": "Red Hat: EX370 OpenShift Data Foundation", "url": "https://www.redhat.com/en/services/training/ex370-red-hat-certified-specialist-in-openshift-data-foundation-exam" },
+          { "title": "Red Hat: EX430 Advanced Cluster Security", "url": "https://www.redhat.com/en/services/training/ex430-red-hat-certified-specialist-openshift-advanced-cluster-security-exam" },
+          { "title": "Red Hat: EX432 Advanced Cluster Management", "url": "https://www.redhat.com/en/services/training/ex432-red-hat-certified-specialist-openshift-advanced-cluster-management-exam" },
+          { "title": "Red Hat: EX229 ROSA (listed as retired)", "url": "https://www.redhat.com/en/services/training/ex229-retired-red-hat-certified-specialist-rosa" },
+          { "title": "Red Hat: EX480 MultiCluster Management (listed as retired)", "url": "https://www.redhat.com/en/services/training/ex480-red-hat-certified-specialist-multicluster-management-exam" },
+          { "title": "KR Network Cloud: Red Hat Certification Roadmap 2026", "url": "https://krnetworkcloud.org/blog/red-hat-certification-roadmap-2026/" }
+        ]
+      },
+      "nodes": [
+        { "id": "do180", "type": "course", "level": "sysadmin", "label": "DO180", "sublabel": "Containers & Kubernetes", "title": "Red Hat OpenShift Administration I: Containers & Kubernetes", "description": "Introduction to containers, Kubernetes and OpenShift. Recommended background for EX280." },
+        { "id": "do280", "type": "course", "level": "sysadmin", "label": "DO280", "sublabel": "Production Cluster Ops", "title": "Red Hat OpenShift Administration II: Operating a Production Kubernetes Cluster", "description": "Core OpenShift administration course that maps to the EX280 objectives. Also listed as a prerequisite or recommendation for several specialist exams (EX370, EX430, EX432, EX480)." },
+        { "id": "ex280", "type": "certification", "level": "sysadmin", "label": "EX280", "sublabel": "OpenShift Admin exam", "title": "Red Hat Certified System Administrator in OpenShift exam (EX280)", "description": "Hands-on, performance-based exam on a live OpenShift cluster. RHCSA is strongly recommended but not required. Check Red Hat's exam page for the current OpenShift version." },
+        { "id": "lvl_sysadmin", "type": "level", "level": "sysadmin", "label": "System Administrator", "sublabel": "Admin in OpenShift", "title": "Level 2 – Red Hat Certified System Administrator in OpenShift", "description": "Core working credential for the OpenShift track, earned by passing EX280." },
+
+        { "id": "do380", "type": "course", "level": "engineer", "label": "DO380", "sublabel": "Scaling in the Enterprise", "title": "Red Hat OpenShift Administration III: Scaling Kubernetes Deployments in the Enterprise", "description": "Prep for EX380: large-scale OpenShift operations. Also listed as a prerequisite for the EX430, EX432 and EX480 specialist exams." },
+        { "id": "ex380", "type": "certification", "level": "engineer", "label": "EX380", "sublabel": "Advanced SysAdmin exam", "title": "Red Hat Certified Advanced System Administrator in OpenShift exam (EX380)", "description": "Covers planning, implementing and managing large-scale OpenShift deployments, including identity provider integration, OADP backup and restore, and OpenShift GitOps. Red Hat expects a current EX280 or equivalent experience, with DO180/DO280 content at version 4.18 or later." },
+        { "id": "lvl_engineer", "type": "level", "level": "engineer", "label": "Engineer", "sublabel": "RHCE in OpenShift", "title": "Level 3 – Red Hat Certified Engineer (OpenShift)", "description": "Awarded automatically when Level 2 (EX280) and the Advanced SysAdmin exam (EX380) are both held." },
+
+        { "id": "do282", "type": "course", "level": "specialist", "label": "DO282", "sublabel": "OpenShift Networking", "title": "Configuring and Managing Red Hat OpenShift Networking", "description": "Prep for EX282." },
+        { "id": "do316", "type": "course", "level": "specialist", "label": "DO316", "sublabel": "OpenShift Virtualization", "title": "Managing Virtual Machines with Red Hat OpenShift Virtualization", "description": "Prep for the OpenShift Virtualization specialist exam. Also recommended background for EX336." },
+        { "id": "do336", "type": "course", "level": "specialist", "label": "DO336", "sublabel": "OpenShift Virt + Ansible", "title": "Automate and Manage Red Hat OpenShift Virtualization with Ansible", "description": "Prep for EX336." },
+        { "id": "do370", "type": "course", "level": "specialist", "label": "DO370", "sublabel": "OpenShift Data Foundation", "title": "Enterprise Kubernetes Storage with Red Hat OpenShift Data Foundation", "description": "Prep for EX370. Red Hat also recommends DO280." },
+        { "id": "do430", "type": "course", "level": "specialist", "label": "DO430", "sublabel": "Advanced Cluster Security", "title": "Securing Kubernetes Clusters with Red Hat Advanced Cluster Security", "description": "Prep for EX430. Attendance is encouraged but not required." },
+        { "id": "do432", "type": "course", "level": "specialist", "label": "DO432", "sublabel": "Advanced Cluster Mgmt", "title": "Multicluster Management with Red Hat Advanced Cluster Management for Kubernetes", "description": "Prep for EX432." },
+        { "id": "cs220", "type": "course", "level": "specialist", "label": "CS220", "sublabel": "Production ROSA Clusters", "title": "Creating and Configuring Production ROSA Clusters", "description": "Prep for EX229 (Red Hat OpenShift Service on AWS)." },
+        { "id": "cs221", "type": "course", "level": "specialist", "label": "CS221", "sublabel": "ROSA + AWS Services", "title": "Integrating ROSA Applications with AWS Services", "description": "Prep for EX229 (Red Hat OpenShift Service on AWS)." },
+        { "id": "do480", "type": "course", "level": "specialist", "label": "DO480", "sublabel": "Multicluster Management", "title": "Multicluster Management with Red Hat OpenShift Platform Plus", "description": "Prep for EX480." },
+
+        { "id": "ex282", "type": "certification", "level": "specialist", "label": "EX282", "sublabel": "OpenShift Networking", "title": "Red Hat Certified Specialist in OpenShift Networking (EX282)", "description": "Four-hour, performance-based exam on OpenShift networking: secondary networks (Multus), user-defined networks, DNS, ingress (MetalLB, routes), egress controls, native BGP routing, NMState node networking and network observability. Based on OpenShift 4.20." },
+        { "id": "ex316", "type": "certification", "level": "specialist", "label": "EX316", "sublabel": "OpenShift Virtualization", "title": "Red Hat Certified Specialist in OpenShift Virtualization (EX316)", "description": "Specialist elective for the OpenShift track. Virtualization is covered here, since the older EX318 was retired with Red Hat Virtualization." },
+        { "id": "ex336", "type": "certification", "level": "specialist", "label": "EX336", "sublabel": "Automating OpenShift VMs", "title": "Red Hat Certified Specialist in Automating OpenShift Virtual Machine Management (EX336)", "description": "Manages VMs in an OpenShift cluster with Ansible Automation Platform. EX316 is strongly recommended but not required; RHCE is recommended." },
+        { "id": "ex370", "type": "certification", "level": "specialist", "label": "EX370", "sublabel": "OpenShift Data Foundation", "title": "Red Hat Certified Specialist in OpenShift Data Foundation (EX370)", "description": "Storage for container-based apps with OpenShift Data Foundation. EX200 and EX280 are recommended." },
+        { "id": "ex430", "type": "certification", "level": "specialist", "label": "EX430", "sublabel": "Advanced Cluster Security", "title": "Red Hat Certified Specialist in OpenShift Advanced Cluster Security (EX430)", "description": "Managing Red Hat Advanced Cluster Security for Kubernetes. Red Hat lists DO280 and DO380 (or equivalent experience) as prerequisites." },
+        { "id": "ex432", "type": "certification", "level": "specialist", "label": "EX432", "sublabel": "Advanced Cluster Mgmt", "title": "Red Hat Certified Specialist in OpenShift Advanced Cluster Management (EX432)", "description": "Planning, deploying and managing RHACM in a multi-cluster environment. Red Hat lists DO280, DO380 and DO432 (or equivalent experience) as prerequisites." },
+        { "id": "ex229", "type": "certification", "level": "specialist", "label": "EX229", "sublabel": "ROSA", "title": "Red Hat Certified Specialist in ROSA (EX229)", "description": "Managing Red Hat OpenShift Service on AWS clusters: registries, EFS storage, observability, AWS Controllers for Kubernetes and autoscaling. Based on OpenShift 4.18. RHCSA or equivalent is recommended.", "flag": "Red Hat's exam page is titled 'Retired'. Confirm it still counts toward RHCA before booking." },
+        { "id": "ex480", "type": "certification", "level": "specialist", "label": "EX480", "sublabel": "MultiCluster Management", "title": "Red Hat Certified Specialist in MultiCluster Management (EX480)", "description": "Four-hour exam on deploying and managing RHACM and RHACS across multiple clusters. Red Hat lists DO280, DO380 and DO480 (or equivalent experience) as prerequisites.", "flag": "Red Hat's exam page is titled 'Retired'. Confirm it still counts toward RHCA before booking." },
+
+        { "id": "lvl_specialist", "type": "level", "level": "specialist", "label": "Specialist", "sublabel": "any 1 of 8 exams", "title": "Level 4 – Specialist certification", "description": "Earned by passing any one of the eight OpenShift specialist exams. Exams can be taken in any order. Three are needed for RHCA." },
+        { "id": "lvl_architect", "type": "level", "level": "architect", "label": "Architect", "sublabel": "RHCA – OpenShift", "title": "Level 5 – Red Hat Certified Architect in OpenShift", "description": "Awarded automatically when you hold the Engineer credential plus three Specialist certifications in the OpenShift track." }
+      ],
+      "edges": [
+        { "from": "do180", "to": "do280", "type": "recommended", "label": "then" },
+        { "from": "do280", "to": "ex280", "type": "recommended" },
+        { "from": "ex280", "to": "lvl_sysadmin", "type": "earns" },
+
+        { "from": "do380", "to": "ex380", "type": "recommended" },
+        { "from": "lvl_sysadmin", "to": "ex380", "type": "recommended" },
+        { "from": "ex380", "to": "lvl_engineer", "type": "earns" },
+        { "from": "lvl_sysadmin", "to": "lvl_engineer", "type": "required" },
+
+        { "from": "lvl_engineer", "to": "do282", "type": "suggested" },
+        { "from": "lvl_engineer", "to": "do316", "type": "suggested" },
+        { "from": "lvl_engineer", "to": "do336", "type": "suggested" },
+        { "from": "lvl_engineer", "to": "do370", "type": "suggested" },
+        { "from": "lvl_engineer", "to": "do430", "type": "suggested" },
+        { "from": "lvl_engineer", "to": "do432", "type": "suggested" },
+        { "from": "lvl_engineer", "to": "cs220", "type": "suggested" },
+        { "from": "lvl_engineer", "to": "cs221", "type": "suggested" },
+        { "from": "lvl_engineer", "to": "do480", "type": "suggested" },
+
+        { "from": "do282", "to": "ex282", "type": "recommended" },
+        { "from": "do316", "to": "ex316", "type": "recommended" },
+        { "from": "do336", "to": "ex336", "type": "recommended" },
+        { "from": "do370", "to": "ex370", "type": "recommended" },
+        { "from": "do430", "to": "ex430", "type": "recommended" },
+        { "from": "do432", "to": "ex432", "type": "recommended" },
+        { "from": "cs220", "to": "ex229", "type": "recommended" },
+        { "from": "cs221", "to": "ex229", "type": "recommended" },
+        { "from": "do480", "to": "ex480", "type": "recommended" },
+
+        { "from": "ex282", "to": "lvl_specialist", "type": "earns" },
+        { "from": "ex316", "to": "lvl_specialist", "type": "earns" },
+        { "from": "ex336", "to": "lvl_specialist", "type": "earns" },
+        { "from": "ex370", "to": "lvl_specialist", "type": "earns" },
+        { "from": "ex430", "to": "lvl_specialist", "type": "earns" },
+        { "from": "ex432", "to": "lvl_specialist", "type": "earns" },
+        { "from": "ex229", "to": "lvl_specialist", "type": "earns" },
+        { "from": "ex480", "to": "lvl_specialist", "type": "earns" },
+
+        { "from": "lvl_specialist", "to": "lvl_architect", "type": "required", "label": "any 3 of 8 exams" },
+        { "from": "lvl_engineer", "to": "lvl_architect", "type": "required" }
+      ]
+    }
+  ]
+}
+</script>
+
+<!-- ===================== APPLICATION LOGIC ===================== -->
+<script>
+const NODE_W = 190, NODE_H = 50, DUMMY_H = 14, COL_GAP = 90, ROW_GAP = 16, PAD = 40;
+const q = (root, sel) => root.querySelector(sel);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- layout: layered DAG (longest-path layering + dummy nodes + barycenter ordering) ---------- */
+function computeLayout(g, S) {
+  const nodes = new Map(g.nodes.map(n => [n.id, n]));
+  const preds = new Map(), succs = new Map();
+  nodes.forEach((_, id) => { preds.set(id, []); succs.set(id, []); });
+  for (const e of g.edges) {
+    if (!nodes.has(e.from) || !nodes.has(e.to)) throw new Error(`Edge references unknown node: ${e.from} → ${e.to}`);
+    if (!S.edgeTypes[e.type]) throw new Error(`Unknown edge type "${e.type}"`);
+    preds.get(e.to).push(e.from); succs.get(e.from).push(e.to);
+  }
+  for (const n of g.nodes) {
+    if (!S.levels[n.level]) throw new Error(`Node "${n.id}" has unknown level "${n.level}"`);
+    if (!S.nodeTypes[n.type]) throw new Error(`Node "${n.id}" has unknown type "${n.type}"`);
+  }
+
+  // 1. longest-path layering (Kahn); detects cycles
+  const layer = new Map(), indeg = new Map(), queue = [];
+  nodes.forEach((_, id) => { indeg.set(id, preds.get(id).length); layer.set(id, 0); if (!indeg.get(id)) queue.push(id); });
+  let seen = 0;
+  while (queue.length) {
+    const id = queue.shift(); seen++;
+    for (const s of succs.get(id)) {
+      layer.set(s, Math.max(layer.get(s), layer.get(id) + 1));
+      indeg.set(s, indeg.get(s) - 1);
+      if (!indeg.get(s)) queue.push(s);
+    }
+  }
+  if (seen !== nodes.size) throw new Error('The graph contains a cycle; prerequisites must form a DAG.');
+  // pull source nodes right next to their earliest successor so they don't float far left
+  nodes.forEach((_, id) => {
+    if (!preds.get(id).length && succs.get(id).length)
+      layer.set(id, Math.min(...succs.get(id).map(s => layer.get(s))) - 1);
+  });
+
+  // 2. dummy nodes for edges that span multiple layers
+  const items = new Map();
+  nodes.forEach((n, id) => items.set(id, { key: id, node: n, layer: layer.get(id), dummy: false, up: [], down: [] }));
+  const chains = g.edges.map((e, ei) => {
+    const keys = [e.from];
+    for (let l = layer.get(e.from) + 1; l < layer.get(e.to); l++) {
+      const k = `d:${ei}:${l}`;
+      items.set(k, { key: k, layer: l, dummy: true, up: [], down: [] });
+      keys.push(k);
+    }
+    keys.push(e.to);
+    for (let i = 0; i < keys.length - 1; i++) { items.get(keys[i]).down.push(keys[i + 1]); items.get(keys[i + 1]).up.push(keys[i]); }
+    return keys;
+  });
+
+  // 3. order within columns (barycenter sweeps)
+  const maxLayer = Math.max(...[...items.values()].map(i => i.layer));
+  const cols = Array.from({ length: maxLayer + 1 }, () => []);
+  items.forEach(it => cols[it.layer].push(it));
+  cols.forEach(c => c.sort((a, b) => a.dummy - b.dummy));
+  const setPos = () => cols.forEach(c => c.forEach((it, i) => it.pos = i));
+  setPos();
+  for (let pass = 0; pass < 4; pass++) {
+    const down = pass % 2 === 0;
+    const seq = down ? cols.slice(1) : cols.slice(0, -1).reverse();
+    for (const c of seq) {
+      c.forEach(it => {
+        const nb = (down ? it.up : it.down).map(k => items.get(k).pos);
+        it.bary = nb.length ? nb.reduce((a, b) => a + b) / nb.length : it.pos;
+      });
+      c.sort((a, b) => a.bary - b.bary);
+      setPos();
+    }
+  }
+
+  // 4. coordinates
+  const colH = cols.map(c => c.reduce((s, it) => s + (it.dummy ? DUMMY_H : NODE_H), 0) + ROW_GAP * (c.length - 1));
+  const maxH = Math.max(...colH);
+  cols.forEach((c, li) => {
+    let y = PAD + (maxH - colH[li]) / 2;
+    const x = PAD + li * (NODE_W + COL_GAP);
+    c.forEach(it => {
+      it.x = x; it.y = y; it.h = it.dummy ? DUMMY_H : NODE_H;
+      it.cx = x + NODE_W / 2; it.cy = y + it.h / 2;
+      y += it.h + ROW_GAP;
+    });
+  });
+
+  // 5. edge paths (smooth curves with horizontal tangents through dummy points)
+  const edgePaths = chains.map(keys => {
+    const pts = keys.map((k, i) => {
+      const it = items.get(k);
+      if (it.dummy) return { x: it.cx, y: it.cy };
+      return i === 0 ? { x: it.x + NODE_W, y: it.cy } : { x: it.x, y: it.cy };
+    });
+    let path = `M${pts[0].x},${pts[0].y}`;
+    for (let i = 1; i < pts.length; i++) {
+      const mx = (pts[i - 1].x + pts[i].x) / 2;
+      path += ` C${mx},${pts[i - 1].y} ${mx},${pts[i].y} ${pts[i].x},${pts[i].y}`;
+    }
+    const a = pts[pts.length - 2], b = pts[pts.length - 1];
+    return { d: path, lx: (a.x + b.x) / 2, ly: (a.y + b.y) / 2 - 4 };
+  });
+
+  return { items, edgePaths,
+    width: PAD * 2 + (maxLayer + 1) * NODE_W + maxLayer * COL_GAP,
+    height: PAD * 2 + maxH };
+}
+
+/* ---------- one self-contained view per graph ---------- */
+class GraphView {
+  constructor(S, g, host) {
+    this.S = S; this.g = g;
+    this.state = { selected: null, hidden: new Set(), scale: 1 };
+
+    this.root = document.createElement('section');
+    this.root.className = 'view';
+    this.root.id = 'view-' + g.id;
+    this.root.innerHTML = `
+      <header>
+        <div><h1></h1><div class="sub subtitle"></div></div>
+        <div><button class="zout" title="Zoom out">−</button> <button class="zfit" title="Fit to width">Fit</button> <button class="zin" title="Zoom in">+</button></div>
+      </header>
+      <div class="body">
+        <div class="viewport"><svg class="graph" xmlns="http://www.w3.org/2000/svg"></svg></div>
+        <aside>
+          <div class="details"></div><hr><div class="legend"></div><div class="meta"></div>
+        </aside>
+      </div>`;
+    host.appendChild(this.root);
+
+    try { this.L = computeLayout(g, S); }
+    catch (err) {
+      q(this.root, 'h1').textContent = g.meta?.title || g.id;
+      q(this.root, '.viewport').innerHTML = `<div class="error"><strong>${esc(err.message)}</strong></div>`;
+      return;
+    }
+    this.renderChrome();
+    this.renderGraph();
+    this.resetDetails();
+    this.fit();
+    q(this.root, '.zin').onclick  = () => this.setScale(this.state.scale * 1.2);
+    q(this.root, '.zout').onclick = () => this.setScale(this.state.scale / 1.2);
+    q(this.root, '.zfit').onclick = () => this.fit();
+  }
+
+  renderChrome() {
+    const { S, g, root } = this, m = g.meta || {};
+    q(root, 'h1').textContent = m.title || g.id;
+    q(root, '.subtitle').textContent = [m.subtitle, m.asOf && `as of ${m.asOf}`].filter(Boolean).join(' · ');
+
+    // legend: shared styles, but only entries that appear in this graph
+    const usedLevels = new Set(g.nodes.map(n => n.level));
+    const usedTypes  = new Set(g.nodes.map(n => n.type));
+    const usedEdges  = new Set(g.edges.map(e => e.type));
+    let h = '<h3>Levels</h3>';
+    for (const [k, lv] of Object.entries(S.levels)) if (usedLevels.has(k))
+      h += `<div class="legend-row"><span class="swatch" style="background:${lv.color}"></span>${esc(lv.label)}</div>`;
+    h += '<h3>Nodes</h3>';
+    for (const [k, t] of Object.entries(S.nodeTypes)) if (usedTypes.has(k))
+      h += `<div class="legend-row"><span class="swatch ${t.dashed ? 'dashed' : ''} ${t.shape === 'pill' ? 'pill' : ''}"></span>${esc(t.label)}</div>`;
+    if (g.nodes.some(n => n.flag))
+      h += `<div class="legend-row"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#f0a030"/><text x="8" y="12" text-anchor="middle" font-size="11" font-weight="700" fill="#1d1d1b">!</text></svg>Needs checking (see details)</div>`;
+    h += '<h3>Edges (toggle)</h3>';
+    for (const [k, t] of Object.entries(S.edgeTypes)) if (usedEdges.has(k))
+      h += `<label class="legend-row"><input type="checkbox" data-edge="${k}" checked>
+            <span class="line" style="border-color:${t.color};border-top-style:${t.dash ? 'dashed' : 'solid'}"></span>${esc(t.label)}</label>`;
+    q(root, '.legend').innerHTML = h;
+
+    q(root, '.meta').innerHTML = (m.disclaimer ? `<p>${esc(m.disclaimer)}</p>` : '') +
+      (m.sources?.length ? '<div>Sources:</div><ul>' + m.sources.map(s => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a></li>`).join('') + '</ul>' : '');
+
+    q(root, '.legend').addEventListener('change', e => {
+      const k = e.target.dataset.edge; if (!k) return;
+      e.target.checked ? this.state.hidden.delete(k) : this.state.hidden.add(k);
+      root.querySelectorAll(`.edge[data-type="${k}"]`).forEach(el => el.style.display = e.target.checked ? '' : 'none');
+      this.highlight(this.state.selected);
+    });
+  }
+
+  renderGraph() {
+    const { S, g, L, root } = this, svg = q(root, '.graph'), gid = g.id;
+    svg.setAttribute('viewBox', `0 0 ${L.width} ${L.height}`);
+    let h = '<defs>';
+    for (const [k, t] of Object.entries(S.edgeTypes))
+      h += `<marker id="arrow-${gid}-${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="${t.color}"/></marker>`;
+    h += '</defs><g>';
+    g.edges.forEach((e, i) => {
+      const t = S.edgeTypes[e.type], p = L.edgePaths[i];
+      h += `<g class="edge" data-i="${i}" data-type="${e.type}">
+        <path d="${p.d}" fill="none" stroke="${t.color}" stroke-width="${t.width}" ${t.dash ? `stroke-dasharray="${t.dash}"` : ''} marker-end="url(#arrow-${gid}-${e.type})"/>
+        ${e.label ? `<text class="edge-label" x="${p.lx}" y="${p.ly}" text-anchor="middle">${esc(e.label)}</text>` : ''}
+      </g>`;
+    });
+    h += '</g><g>';
+    g.nodes.forEach(n => {
+      const it = L.items.get(n.id), nt = S.nodeTypes[n.type], lv = S.levels[n.level];
+      const course = n.type === 'course';
+      const fill = course ? 'var(--panel)' : lv.color;
+      const rx = nt.shape === 'pill' ? NODE_H / 2 : 8;
+      h += `<g class="node" data-id="${esc(n.id)}" transform="translate(${it.x},${it.y})">
+        <rect width="${NODE_W}" height="${NODE_H}" rx="${rx}" fill="${fill}" stroke="${nt.shape === 'pill' ? '#444' : '#777'}" stroke-width="${nt.shape === 'pill' ? 2 : 1.5}" ${nt.dashed ? 'stroke-dasharray="5 3"' : ''}/>
+        ${course ? `<rect width="6" height="${NODE_H}" rx="3" fill="${lv.color}" stroke="#777" stroke-width="1"/>` : ''}
+        <text x="${NODE_W / 2}" y="${n.sublabel ? 21 : 30}" text-anchor="middle" font-size="13" font-weight="700" ${course ? 'style="fill:var(--fg)"' : ''}>${esc(n.label)}</text>
+        ${n.sublabel ? `<text x="${NODE_W / 2}" y="37" text-anchor="middle" font-size="11" ${course ? 'style="fill:var(--muted)"' : ''}>${esc(n.sublabel)}</text>` : ''}
+        ${n.flag ? `<g><circle cx="${NODE_W - 8}" cy="8" r="7" fill="#f0a030"/><text x="${NODE_W - 8}" y="12" text-anchor="middle" font-size="11" font-weight="700" style="fill:#1d1d1b">!</text><title>${esc(n.flag)}</title></g>` : ''}
+      </g>`;
+    });
+    svg.innerHTML = h + '</g>';
+
+    svg.addEventListener('mouseover', e => { const n = e.target.closest('.node'); if (n) this.highlight(n.dataset.id); });
+    svg.addEventListener('mouseout',  e => { if (e.target.closest('.node')) this.highlight(this.state.selected); });
+    svg.addEventListener('click', e => {
+      const n = e.target.closest('.node');
+      this.select(n && n.dataset.id !== this.state.selected ? n.dataset.id : null);
+    });
+  }
+
+  reach(start, dir) {                    // nodes reachable from start via visible edges
+    const out = new Set([start]), stack = [start];
+    while (stack.length) {
+      const id = stack.pop();
+      for (const e of this.g.edges) {
+        if (this.state.hidden.has(e.type)) continue;
+        const [a, b] = dir === 'down' ? [e.from, e.to] : [e.to, e.from];
+        if (a === id && !out.has(b)) { out.add(b); stack.push(b); }
+      }
+    }
+    return out;
+  }
+
+  highlight(id) {
+    const nodeEls = this.root.querySelectorAll('.node'), edgeEls = this.root.querySelectorAll('.edge');
+    if (!id) { [...nodeEls, ...edgeEls].forEach(el => el.classList.remove('dim')); return; }
+    const anc = this.reach(id, 'up'), desc = this.reach(id, 'down');
+    nodeEls.forEach(el => el.classList.toggle('dim', !anc.has(el.dataset.id) && !desc.has(el.dataset.id)));
+    edgeEls.forEach(el => {
+      const e = this.g.edges[el.dataset.i];
+      const on = (anc.has(e.from) && anc.has(e.to)) || (desc.has(e.from) && desc.has(e.to));
+      el.classList.toggle('dim', !on);
+    });
+  }
+
+  resetDetails() {
+    q(this.root, '.details').innerHTML = '<span class="sub">Hover a node to trace its prerequisites and what it leads to. Click for details.</span>';
+  }
+
+  select(id) {
+    const { S, g } = this;
+    this.state.selected = id;
+    this.root.querySelectorAll('.node').forEach(el => el.classList.toggle('sel', el.dataset.id === id));
+    this.highlight(id);
+    if (!id) { this.resetDetails(); return; }
+    const n = g.nodes.find(x => x.id === id), lv = S.levels[n.level], nt = S.nodeTypes[n.type];
+    const label = nid => { const m = g.nodes.find(x => x.id === nid); return `${esc(m.label)} <span class="sub">${esc(m.sublabel || '')}</span>`; };
+    const incoming = g.edges.filter(e => e.to === id), outgoing = g.edges.filter(e => e.from === id);
+    const list = (title, arr, key) => arr.length ? `<h3>${title}</h3><ul>${arr.map(e => `<li>${label(e[key])} <span class="sub">(${esc(S.edgeTypes[e.type].label.toLowerCase())}${e.label ? ' · ' + esc(e.label) : ''})</span></li>`).join('')}</ul>` : '';
+    q(this.root, '.details').innerHTML = `<h2>${esc(n.title || n.label)}</h2>
+      <span class="badge" style="background:${lv.color}">${esc(lv.label)}</span><span class="badge" style="background:var(--border)">${esc(nt.label)}</span>
+      <p>${esc(n.description || '')}</p>
+      ${n.flag ? `<p class="warn">⚠ ${esc(n.flag)}</p>` : ''}
+      ${list('Comes from', incoming, 'from')}${list('Leads to', outgoing, 'to')}`;
+  }
+
+  setScale(s) {
+    this.state.scale = Math.min(2, Math.max(0.3, s));
+    const svg = q(this.root, '.graph');
+    svg.setAttribute('width', this.L.width * this.state.scale);
+    svg.setAttribute('height', this.L.height * this.state.scale);
+  }
+  fit() { this.setScale(Math.max(0.55, Math.min(1, (q(this.root, '.viewport').clientWidth - 20) / this.L.width))); }
+}
+
+/* ---------- bootstrap: sections + sticky tab bar ---------- */
+(function init() {
+  let data;
+  try { data = JSON.parse(document.getElementById('graph-data').textContent); }
+  catch (err) { document.getElementById('sections').innerHTML = `<div class="error"><strong>${esc(err.message)}</strong></div>`; return; }
+
+  const host = document.getElementById('sections'), nav = document.getElementById('tabs');
+  const views = data.graphs.map(g => new GraphView(data.styles, g, host));
+
+  const buttons = data.graphs.map((g, i) => {
+    const b = document.createElement('button');
+    b.textContent = g.tab || g.id;
+    b.onclick = () => views[i].root.scrollIntoView({ behavior: 'smooth' });
+    nav.appendChild(b);
+    return b;
+  });
+
+  const setActive = i => buttons.forEach((b, j) => b.classList.toggle('active', i === j));
+  setActive(0);
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => { if (en.isIntersecting) setActive(views.findIndex(v => v.root === en.target)); });
+  }, { threshold: 0.5 });
+  views.forEach(v => io.observe(v.root));
+})();
+</script>
+</body>
+</html>
